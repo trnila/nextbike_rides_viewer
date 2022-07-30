@@ -4,6 +4,7 @@
   let events = [];
   let current;
   let active = [];
+  let playing = false;
 
   let M;
 
@@ -117,20 +118,18 @@
       a.marker.setLatLng(pos);
     }
 
-    window.requestAnimationFrame(move);
+    if(playing) {
+      window.requestAnimationFrame(move);
+    }
   }
 
   function start() {
-    //tick();
+    playing = !playing;
+    last = 0;
 
-    window.requestAnimationFrame(move);
-
-    /*
-    setInterval(() => {
-      current = new Date(current.getTime() + 60*1000);
-      tick();
-    }, 1000);
-    */
+    if(playing) {
+      window.requestAnimationFrame(move);
+    }
   }
 </script>
 
@@ -150,6 +149,6 @@
 {current}
 {/if}
 
-<button on:click={start}>Start</button>
+<button on:click={start}>{playing ? 'Pause' : 'Play'}</button>
 
 <div style="width: 100vw; height: 100vh;" use:map />
