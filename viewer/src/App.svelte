@@ -1,6 +1,8 @@
 <script>
   import L from "leaflet";
   import Datetime from "./Datetime.svelte";
+  import Icon from '@iconify/svelte';
+
 
   let events = [];
   let current;
@@ -137,6 +139,30 @@
   }
 </script>
 
+<style>
+  #toolbar {
+    position: absolute;
+    top: 0px;
+    z-index: 1000;
+    padding: 5px;
+    width: 100vw;
+    text-align: center;
+  }
+
+  button {
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    background-color: #fff;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-radius: 4px;
+  }
+  button:hover {
+    background-color: #f4f4f4;
+  }
+</style>
+
 <link
   rel="stylesheet"
   href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
@@ -144,11 +170,10 @@
   crossorigin=""
 />
 
-
-{#if events.length}
+<div id="toolbar">
+  <button on:click={start}>
+    <Icon icon="el:{playing ? 'pause' : 'play'}" />
+  </button>
   <Datetime bind:value={current} />
-{/if}
-
-<button on:click={start}>{playing ? 'Pause' : 'Play'}</button>
-
-<div style="width: 100vw; height: 100vh;" use:map />
+</div>
+<div style="width: 100%; height: 100%;" use:map />
