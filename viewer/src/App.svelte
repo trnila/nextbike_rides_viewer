@@ -1,5 +1,6 @@
 <script>
   import L from "leaflet";
+  import Datetime from "./Datetime.svelte";
 
   let events = [];
   let current;
@@ -68,7 +69,7 @@
   function tick() {
     active = active.filter(a => {
       const t = events[a.index];
-      if(current > t.tsDst) {
+      if(current > t.tsDst  || t.tsSrc > current) {
         a.marker.remove(M);
         a.polyline.remove(M);
         return false;
@@ -83,14 +84,16 @@
         break;
       }
 
-      let marker = L.marker([t.srcLat, t.srcLng]).addTo(M);
-      var polyline = L.polyline([[t.srcLat, t.srcLng],[t.dstLat, t.dstLng]], {color: 'red'}).addTo(M);
+      if(t.tsDst > current && !active.find((el) => el.index == head)) {
+        let marker = L.marker([t.srcLat, t.srcLng]).addTo(M);
+        var polyline = L.polyline([[t.srcLat, t.srcLng],[t.dstLat, t.dstLng]], {color: 'red'}).addTo(M);
 
-      active.push({
-        index: head,
-        marker: marker,
-        polyline: polyline,
-      });
+        active.push({
+          index: head,
+          marker: marker,
+          polyline: polyline,
+        });
+      }
     }
   }
 
@@ -126,6 +129,7 @@
   function start() {
     playing = !playing;
     last = 0;
+    head = 0;
 
     if(playing) {
       window.requestAnimationFrame(move);
@@ -140,13 +144,9 @@
   crossorigin=""
 />
 
-{head}
-{#if events.length}
-  {events[0].tsSrc}
 
-  {events[events.length - 1].tsSrc}
-  <br>
-{current}
+{#if events.length}
+  <Datetime bind:value={current} />
 {/if}
 
 <button on:click={start}>{playing ? 'Pause' : 'Play'}</button>
