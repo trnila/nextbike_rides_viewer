@@ -59,7 +59,7 @@
       current = events[0].tsSrc;
 
       console.log(events);
-      start();
+      start(true);
     }
 
     //x();
@@ -128,8 +128,8 @@
     }
   }
 
-  function start() {
-    playing = !playing;
+  function start(play) {
+    playing = play;
     last = 0;
     head = 0;
 
@@ -171,9 +171,9 @@
 />
 
 <div id="toolbar">
-  <button on:click={start}>
+  <button on:click={() => start(!playing)}>
     <Icon icon="el:{playing ? 'pause' : 'play'}" />
   </button>
-  <Datetime bind:value={current} />
+  <Datetime bind:value={current} on:click={() => start(false)} />
 </div>
 <div style="width: 100%; height: 100%;" use:map />

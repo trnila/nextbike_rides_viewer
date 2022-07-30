@@ -1,5 +1,9 @@
 <script>
+    import { createEventDispatcher } from 'svelte'
+
     export let value;
+
+    const dispatch = createEventDispatcher();
 
     $: text = value ? new Date(value.getTime() - value.getTimezoneOffset() * 60000).toISOString().substring(0, 16) : null;
 
@@ -19,4 +23,4 @@
     }
 </style>
 
-<input type="datetime-local" value={text} on:change={change}>
+<input type="datetime-local" value={text} on:change={change} on:click={() => dispatch('click')}>
