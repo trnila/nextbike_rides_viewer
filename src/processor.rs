@@ -9,7 +9,6 @@ use crate::rides::Rides;
 use crate::{stations::Stations, input::JSON, Record};
 
 
-
 #[derive(Serialize, Deserialize, Debug)]
 struct CsvStation {
     name: String,
@@ -49,57 +48,71 @@ struct P {
     lng: f32
 }
 
+pub struct RidesProcessor {
+    stations: Stations,
+    state: HashMap::<u32, Record>,
+    rides: Rides,
+}
 
-pub fn process(timestamp: u64, p: &JSON, state: &mut HashMap::<u32, Record>, stations: &mut Stations, rides: &mut Rides) -> u64 {
-    if p.countries.len() != 1 {
-        error!("Number of countries in {timestamp} is not 1, but {}", p.countries.len());
-        return 0;
+impl RidesProcessor {
+    pub fn new(stations: Stations, rides: Rides) -> Self {
+        RidesProcessor {
+            stations,
+            rides,
+            state: HashMap::new(),
+        }
     }
 
-    let mut total_rides = 0u64;
-    for place in &p.countries[0].cities[0].places {
-        if place.name.starts_with("BIKE") {
-            continue
+    pub fn process(&mut self, timestamp: u64, json: &JSON) -> u64 {
+        if json.countries.len() != 1 {
+            error!("Number of countries in {timestamp} is not 1, but {}", json.countries.len());
+            return 0;
         }
 
-        stations.add_station(place.uid, &place.name, place.lat, place.lng);
-
-        for bike in &place.bike_list {
-            let id = bike.number.parse::<u32>().unwrap();
-
-            if let Some(rec) = state.get(&id) {
-                if rec.station_uid != place.uid {
-                    let s = stations.stations.get(&rec.station_uid).unwrap();
-
-                    rides.write(&CsvRide{
-                        bike_id: id,
-                        src: P{
-                            timestamp: rec.timestamp,
-                            name: clean_name(&rec.station),
-                            lat: s.lat,
-                            lng: s.lng,
-                        },
-                        dst: P {
-                            timestamp: timestamp as u64,
-                            name: clean_name(&place.name),
-                            lat: place.lat,
-                            lng: place.lng,
-                        }
-                    }).unwrap();
-
-                    total_rides += 1;
-                }
+        let mut rides = 0u64;
+        for place in &json.countries[0].cities[0].places {
+            if place.name.starts_with("BIKE") {
+                continue
             }
 
-            state.insert(id, Record{
-                timestamp: timestamp as u64,
-                station: place.name.clone(),
-                station_uid: place.uid,
-            });
-        }
-    }
+            self.stations.add_station(place.uid, &place.name, place.lat, place.lng);
 
-    total_rides
+            for bike in &place.bike_list {
+                let id = bike.number.parse::<u32>().unwrap();
+
+                if let Some(rec) = self.state.get(&id) {
+                    if rec.station_uid != place.uid {
+                        let s = self.stations.stations.get(&rec.station_uid).unwrap();
+
+                        self.rides.write(&CsvRide{
+                            bike_id: id,
+                            src: P{
+                                timestamp: rec.timestamp,
+                                name: clean_name(&rec.station),
+                                lat: s.lat,
+                                lng: s.lng,
+                            },
+                            dst: P {
+                                timestamp: timestamp as u64,
+                                name: clean_name(&place.name),
+                                lat: place.lat,
+                                lng: place.lng,
+                            }
+                        }).unwrap();
+
+                        rides += 1;
+                    }
+                }
+
+                self.state.insert(id, Record{
+                    timestamp: timestamp as u64,
+                    station: place.name.clone(),
+                    station_uid: place.uid,
+                });
+            }
+        }
+        rides
+    }
 }
 
 fn clean_name(name: &str) -> String {

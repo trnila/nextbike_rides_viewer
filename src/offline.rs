@@ -3,7 +3,7 @@ use indicatif::ProgressBar;
 
 use log::{error, debug};
 
-use crate::{Record, stations::Stations, processor::process, input::JSON, rides::Rides, logging::LoggingAwareProgressBar};
+use crate::{Record, stations::Stations, input::JSON, rides::Rides, logging::LoggingAwareProgressBar, processor::RidesProcessor};
 
 struct JsonFile {
     path: std::path::PathBuf,
@@ -42,9 +42,8 @@ fn get_files(path: &PathBuf) -> Option<Vec<JsonFile>> {
     }
 }
 
-pub fn load_from_disk(input_path: &PathBuf, output_path: &PathBuf, stations: &mut Stations) {
-    let mut state = HashMap::<u32, Record>::new();
-    let mut rides = Rides::new_blank(output_path);
+pub fn load_from_disk(input_path: &PathBuf, output_path: &PathBuf, stations: Stations) {
+    let mut processor = RidesProcessor::new(stations, Rides::new_blank(output_path));
 
     let files = get_files(input_path).unwrap();
     let bar = LoggingAwareProgressBar::new(files.len() as u64);
@@ -58,8 +57,8 @@ pub fn load_from_disk(input_path: &PathBuf, output_path: &PathBuf, stations: &mu
             Ok(f) => {
                 let reader = BufReader::with_capacity(1024*1024*5, f);
                 match serde_json::from_reader::<BufReader<File>, JSON>(reader) {
-                    Ok(p) => {
-                        total_rides += process(timestamp, &p, &mut state, stations, &mut rides);
+                    Ok(json) => {
+                        total_rides += processor.process(timestamp, &json);
                         bar.set_message(format!("{total_rides} rides"));
                     }
                     Err(e) => error!("Failed to parse JSON {path:?}: {e:?}"),

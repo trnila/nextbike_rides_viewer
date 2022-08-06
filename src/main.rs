@@ -121,26 +121,25 @@ fn main() {
     logging::Logger::init();
     let cli = Cli::parse();
 
-    let mut stations = Stations::new(cli.stations_path);
+    let stations = Stations::new(cli.stations_path);
 
     match cli.command {
         Commands::Online { interval } => {
-            let mut state = HashMap::<u32, Record>::new();
-            let mut rides = Rides::new_blank(&cli.rides_path);
+            let mut processor = RidesProcessor::new(stations, Rides::new_appending(&cli.rides_path));
 
             loop {
-                scrap_data(&cli.input_dir, &mut state, &mut stations, &mut rides);               
+                scrap_data(&cli.input_dir, &mut processor);
                 thread::sleep(interval);
             }
 
         },
         Commands::Offline => {
-            load_from_disk(&cli.input_dir, &cli.rides_path, &mut stations);
+            load_from_disk(&cli.input_dir, &cli.rides_path, stations);
         }
     }
 }
 
-fn scrap_data(input_dir: &PathBuf, state: &mut HashMap<u32, Record>, stations: &mut Stations, rides: &mut Rides) {
+fn scrap_data(input_dir: &PathBuf, processor: &mut RidesProcessor) {
     let ts = SystemTime::now().duration_since(time::UNIX_EPOCH).unwrap().as_secs();
 
     debug!("Downloading new data at {ts}");
@@ -156,7 +155,7 @@ fn scrap_data(input_dir: &PathBuf, state: &mut HashMap<u32, Record>, stations: &
 
                     match serde_json::from_str::<JSON>(&body) {
                         Ok(json) => {
-                            let rides = process(ts, &json, state, stations, rides);
+                            let rides = processor.process(ts, &json);
                             debug!("{rides} new rides found");
                         }
                         Err(err) => error!("Failed to parse json: {err}"),
