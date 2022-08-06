@@ -1,7 +1,8 @@
+use std::time::Duration;
 use std::{collections::HashMap, io::BufWriter, fs::File};
 use std::io::Write;
 
-use log::error;
+use log::{error, warn};
 use regex::Regex;
 use serde::{Serialize, Deserialize};
 
@@ -52,6 +53,7 @@ pub struct RidesProcessor {
     stations: Stations,
     state: HashMap::<u32, Record>,
     rides: Rides,
+    last_timestamp: u64,
 }
 
 impl RidesProcessor {
@@ -60,6 +62,7 @@ impl RidesProcessor {
             stations,
             rides,
             state: HashMap::new(),
+            last_timestamp: 0,
         }
     }
 
@@ -67,6 +70,22 @@ impl RidesProcessor {
         if json.countries.len() != 1 {
             error!("Number of countries in {timestamp} is not 1, but {}", json.countries.len());
             return 0;
+        }
+
+        let previous_timestamp = self.last_timestamp;
+        self.last_timestamp = timestamp;
+        if previous_timestamp != 0 {
+            if timestamp < previous_timestamp {
+                error!("current timestamp is lesser then previous {timestamp} < {previous_timestamp}");
+                return 0;
+            }
+
+            let diff = Duration::from_secs(timestamp - previous_timestamp);
+            if diff > Duration::from_secs(10 * 60) {
+                warn!("Time gap of {diff:?} found, resetting state");
+                self.state.clear();
+                return 0;
+            }
         }
 
         let mut rides = 0u64;
