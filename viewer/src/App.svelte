@@ -42,15 +42,19 @@
       const text = await res.text();
 
       events = text.split("\n").filter(line => line.length > 0).map((line) => {
-        let ride = JSON.parse(line);
-        ride.src.timestamp = new Date(ride.src.timestamp * 1000);
-        ride.dst.timestamp = new Date(ride.dst.timestamp * 1000);
-        return ride;
-      });
+        try {
+          let ride = JSON.parse(line);
+          ride.src.timestamp = new Date(ride.src.timestamp * 1000);
+          ride.dst.timestamp = new Date(ride.dst.timestamp * 1000);
+          return ride;
+        } catch(err) {
+          console.log(err);
+          return null;
+        }
+      }).filter(record => record);
       
       current = events[0].src.timestamp;
 
-      console.log(events);
       start(true);
     }
 
