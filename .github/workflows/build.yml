@@ -52,8 +52,10 @@ jobs:
     
     steps:
     - uses: actions/download-artifact@v3
+    - run: find
     - uses: softprops/action-gh-release@v1
       with:
         files: |
-          parser/target/aarch64-unknown-linux-gnu/release/nextbike
-          frontend/viewer/dist/*
+          nextbike
+          index.html
+          assets/*
