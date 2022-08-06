@@ -1,3 +1,9 @@
+use env_logger::Logger;
+use indicatif::ProgressBar;
+use log::Level;
+use log::LevelFilter;
+use log::Metadata;
+use logging::LoggingAwareProgressBar;
 use rides::Rides;
 use serde::{Deserialize, Serialize};
 use stations::Stations;
@@ -26,6 +32,7 @@ mod offline;
 mod processor;
 mod stations;
 mod rides;
+mod logging;
 
 use offline::*;
 use input::*;
@@ -118,7 +125,7 @@ enum Commands {
 }
 
 fn main() {
-    env_logger::init();
+    logging::Logger::init();
     let cli = Cli::parse();
 
     let mut stations = Stations::new(cli.stations_path);

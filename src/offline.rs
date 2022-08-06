@@ -1,8 +1,9 @@
-use std::{fs::{self, OpenOptions, File}, collections::HashMap, io::{BufWriter, BufReader}, path::PathBuf};
+use std::{fs::{self, OpenOptions, File}, collections::HashMap, io::{BufWriter, BufReader}, path::PathBuf, sync::{Weak, Arc}};
+use indicatif::ProgressBar;
 
 use log::{error, debug};
 
-use crate::{Record, stations::Stations, processor::process, input::JSON, rides::Rides};
+use crate::{Record, stations::Stations, processor::process, input::JSON, rides::Rides, logging::LoggingAwareProgressBar};
 
 struct JsonFile {
     path: std::path::PathBuf,
@@ -45,7 +46,11 @@ pub fn load_from_disk(input_path: &PathBuf, output_path: &PathBuf, stations: &mu
     let mut state = HashMap::<u32, Record>::new();
     let mut rides = Rides::new_blank(output_path);
 
-    for JsonFile{timestamp, path} in get_files(input_path).unwrap() {
+    let files = get_files(input_path).unwrap();
+    let bar = LoggingAwareProgressBar::new(files.len() as u64);
+    bar.set_style(indicatif::ProgressStyle::with_template("[{elapsed_precise}] [{wide_bar:.cyan/blue}] {per_sec:7} (ETA {eta_precise:>5})").unwrap().progress_chars("#>-"));
+
+    for JsonFile{timestamp, path} in files {
         debug!("Processing {path:?}");
 
         match File::open(&path) {
@@ -60,5 +65,7 @@ pub fn load_from_disk(input_path: &PathBuf, output_path: &PathBuf, stations: &mu
             }
             Err(e) => error!("Failed to open file: {e}")
         }
+
+        bar.inc(1);
     }
 }
