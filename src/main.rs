@@ -45,13 +45,6 @@ pub struct Record {
     timestamp: u64,
 }
 
-fn download() -> Result<JSON, Box<dyn std::error::Error>> {
-    let body = reqwest::blocking::get("https://api.nextbike.net/maps/nextbike-live.json?city=271")?.text()?;
-    Ok(serde_json::from_str::<JSON>(&body)?)
-}
-
-
-
 #[derive(Debug)]
 enum ParseDurationError {
     ParseIntError(std::num::ParseIntError),
@@ -107,6 +100,9 @@ struct Cli {
     #[clap(short, long, help="path to output JSON", default_value="./viewer/public/stations.json")]
     stations_path: PathBuf,
 
+    #[clap(short, long, help="directory with input JSONs", default_value="./data/")]
+    input_dir: PathBuf,
+
     #[clap(subcommand)]
     command: Commands,
 }
@@ -118,10 +114,7 @@ enum Commands {
         interval: std::time::Duration,
     },
 
-    Offline {
-        #[clap(short, long, help="directory with input JSONs", default_value="./data/")]
-        input_dir: PathBuf,
-    },
+    Offline,
 }
 
 fn main() {
@@ -136,16 +129,42 @@ fn main() {
             let mut rides = Rides::new_blank(&cli.rides_path);
 
             loop {
-                let p = download().unwrap();
-                let ts = SystemTime::now().elapsed().unwrap().as_secs().try_into().unwrap();
-
-                process(ts, &p, &mut state, &mut stations, &mut rides);
+                scrap_data(&cli.input_dir, &mut state, &mut stations, &mut rides);               
                 thread::sleep(interval);
             }
 
         },
-        Commands::Offline { input_dir } => {
-            load_from_disk(&input_dir, &cli.rides_path, &mut stations);
+        Commands::Offline => {
+            load_from_disk(&cli.input_dir, &cli.rides_path, &mut stations);
         }
+    }
+}
+
+fn scrap_data(input_dir: &PathBuf, state: &mut HashMap<u32, Record>, stations: &mut Stations, rides: &mut Rides) {
+    let ts = SystemTime::now().duration_since(time::UNIX_EPOCH).unwrap().as_secs();
+
+    debug!("Downloading new data at {ts}");
+    match reqwest::blocking::get("https://api.nextbike.net/maps/nextbike-live.json?city=271") {
+        Ok(resp) => {
+            match resp.text() {
+                Ok(body) => {
+                    let path = input_dir.join(format!("{ts}.json"));
+
+                    if let Err(err) = fs::write(&path, &body) {
+                        error!("Failed to store response {path:?}: {err}");
+                    }
+
+                    match serde_json::from_str::<JSON>(&body) {
+                        Ok(json) => {
+                            let rides = process(ts, &json, state, stations, rides);
+                            debug!("{rides} new rides found");
+                        }
+                        Err(err) => error!("Failed to parse json: {err}"),
+                    }                                
+                },
+                Err(err) => error!("Failed to parse response: {err}"),
+            }
+        },
+        Err(err) => error!("Failed to fetch: {err}"),
     }
 }

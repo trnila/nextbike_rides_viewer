@@ -7,7 +7,7 @@ use crate::{Record, stations::Stations, processor::process, input::JSON, rides::
 
 struct JsonFile {
     path: std::path::PathBuf,
-    timestamp: u32,
+    timestamp: u64,
 }
 
 fn get_files(path: &PathBuf) -> Option<Vec<JsonFile>> {
@@ -20,7 +20,7 @@ fn get_files(path: &PathBuf) -> Option<Vec<JsonFile>> {
                             Some(stem) =>{
                                 Some(JsonFile{
                                     path: path.path().clone(),
-                                    timestamp: stem.to_str().unwrap().parse::<u32>().unwrap(),
+                                    timestamp: stem.to_str().unwrap().parse::<u64>().unwrap(),
                                 })
                             }
                             None => {

@@ -50,7 +50,7 @@ struct P {
 }
 
 
-pub fn process(timestamp: u32, p: &JSON, state: &mut HashMap::<u32, Record>, stations: &mut Stations, rides: &mut Rides) -> u64 {
+pub fn process(timestamp: u64, p: &JSON, state: &mut HashMap::<u32, Record>, stations: &mut Stations, rides: &mut Rides) -> u64 {
     if p.countries.len() != 1 {
         error!("Number of countries in {timestamp} is not 1, but {}", p.countries.len());
         return 0;
