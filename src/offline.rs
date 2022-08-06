@@ -53,10 +53,9 @@ pub fn load_from_disk(input_path: &PathBuf, output_path: &PathBuf, stations: Sta
     for JsonFile{timestamp, path} in files {
         debug!("Processing {path:?}");
 
-        match File::open(&path) {
-            Ok(f) => {
-                let reader = BufReader::with_capacity(1024*1024*5, f);
-                match serde_json::from_reader::<BufReader<File>, JSON>(reader) {
+        match std::fs::read_to_string(&path) {
+            Ok(str) => {
+                match serde_json::from_str::<JSON>(&str) {
                     Ok(json) => {
                         total_rides += processor.process(timestamp, &json);
                         bar.set_message(format!("{total_rides} rides"));
