@@ -41,6 +41,14 @@ jobs:
       with:
         name: frontend
         path: viewer/dist/
+        
+  deploy:
+    runs-on: ubuntu-latest
+    needs:
+     - build_parser
+     - build_frontend
+    steps:
+      - run: 'curl --fail -s -H"Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" https://trnila.eu/hooks/nextbike_deploy'
   
   release:
     runs-on: ubuntu-latest
