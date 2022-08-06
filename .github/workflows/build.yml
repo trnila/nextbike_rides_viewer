@@ -51,8 +51,8 @@ jobs:
     - uses: actions/download-artifact@v3
     - uses: softprops/action-gh-release@v1
       with:
-        tag_name: latest
-        name: latest
+        tag_name: ${{ github.sha }}
+        name: ${{ github.sha }}
         files: |
-          target/aarch64-unknown-linux-gnu/release/nextbike
-          viewer/dist/*
+          parser/target/aarch64-unknown-linux-gnu/release/nextbike
+          frontend/viewer/dist/*
