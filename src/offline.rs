@@ -1,15 +1,15 @@
-use std::{fs::{self, OpenOptions, File}, collections::HashMap, io::{BufWriter, BufReader}};
+use std::{fs::{self, OpenOptions, File}, collections::HashMap, io::{BufWriter, BufReader}, path::PathBuf};
 
 use log::{error, debug};
 
-use crate::{Record, stations::Stations, processor::process, input::JSON};
+use crate::{Record, stations::Stations, processor::process, input::JSON, rides::Rides};
 
 struct JsonFile {
     path: std::path::PathBuf,
     timestamp: u32,
 }
 
-fn get_files(path: &str) -> Option<Vec<JsonFile>> {
+fn get_files(path: &PathBuf) -> Option<Vec<JsonFile>> {
     match fs::read_dir(path) {
         Ok(files_iter) => {
             let mut files: Vec<JsonFile> = files_iter.filter_map(|path| {
@@ -35,20 +35,17 @@ fn get_files(path: &str) -> Option<Vec<JsonFile>> {
             Some(files)
         }
         Err(x) => {
-            error!("Failed to list files in {}: {:?}", path, x);
+            error!("Failed to list files in {}: {:?}", path.display(), x);
             None
         }
     }
 }
 
-pub fn load_from_disk(path: &str) {
+pub fn load_from_disk(input_path: &PathBuf, output_path: &PathBuf, stations: &mut Stations) {
     let mut state = HashMap::<u32, Record>::new();
-    let mut s = Stations::new("viewer/public/stations.json");
+    let mut rides = Rides::new_blank(output_path);
 
-    let f = OpenOptions::new().write(true).create(true).truncate(true).open("viewer/public/rides.json").unwrap();
-    let mut w = BufWriter::new(f);
-
-    for JsonFile{timestamp, path} in get_files(path).unwrap() {
+    for JsonFile{timestamp, path} in get_files(input_path).unwrap() {
         debug!("Processing {path:?}");
 
         match File::open(&path) {
@@ -56,7 +53,7 @@ pub fn load_from_disk(path: &str) {
                 let reader = BufReader::with_capacity(1024*1024*5, f);
                 match serde_json::from_reader::<BufReader<File>, JSON>(reader) {
                     Ok(p) => {
-                        process(timestamp, &p, &mut state, &mut s, &mut w);
+                        process(timestamp, &p, &mut state, stations, &mut rides);
                     }
                     Err(e) => error!("Failed to parse json: {:?}", e),
                 }

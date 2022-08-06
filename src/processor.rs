@@ -4,6 +4,7 @@ use std::io::Write;
 use regex::Regex;
 use serde::{Serialize, Deserialize};
 
+use crate::rides::Rides;
 use crate::{stations::Stations, input::JSON, Record};
 
 
@@ -32,7 +33,7 @@ struct Locatin {
 
 
 #[derive(Serialize, Deserialize, Debug)]
-struct CsvRide {
+pub struct CsvRide {
     bike_id: u32,
 
     src: P,
@@ -48,7 +49,7 @@ struct P {
 }
 
 
-pub fn process(timestamp: u32, p: &JSON, state: &mut HashMap::<u32, Record>, stations: &mut Stations, w: &mut BufWriter<File>) {
+pub fn process(timestamp: u32, p: &JSON, state: &mut HashMap::<u32, Record>, stations: &mut Stations, rides: &mut Rides) {
     if p.countries.len() != 1 {
         return;
     }
@@ -67,7 +68,7 @@ pub fn process(timestamp: u32, p: &JSON, state: &mut HashMap::<u32, Record>, sta
                 if rec.station_uid != place.uid {
                     let s = stations.stations.get(&rec.station_uid).unwrap();
 
-                    serde_json::to_writer(&mut *w, &CsvRide{
+                    rides.write(&CsvRide{
                         bike_id: id,
                         src: P{
                             timestamp: rec.timestamp,
@@ -82,7 +83,6 @@ pub fn process(timestamp: u32, p: &JSON, state: &mut HashMap::<u32, Record>, sta
                             lng: place.lng,
                         }
                     }).unwrap();
-                    w.write_all(b"\n").unwrap();
                 }
             }
 

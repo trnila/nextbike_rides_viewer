@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, hash_map::Entry}, fs::{File, OpenOptions}, io::BufReader};
+use std::{collections::{HashMap, hash_map::Entry}, fs::{File, OpenOptions}, io::BufReader, path::PathBuf};
 
 use serde::{Serialize, Deserialize};
 
@@ -13,12 +13,12 @@ pub struct Station {
 
 pub struct Stations {
     pub stations: HashMap::<StationId, Station>,
-    path: String,
+    path: PathBuf,
 }
 
 impl Stations {
-    pub fn new(path: &str) -> Stations {
-        let stations: HashMap::<StationId, Station> = match File::open(path) {
+    pub fn new(path: PathBuf) -> Stations {
+        let stations: HashMap::<StationId, Station> = match File::open(&path) {
             Ok(f) => serde_json::from_reader(BufReader::new(f)).unwrap(),
             Err(err) => match err.kind() {
                 std::io::ErrorKind::NotFound => HashMap::<StationId, Station>::new(),
@@ -28,7 +28,7 @@ impl Stations {
 
         Stations {
             stations,
-            path: path.to_string(),
+            path,
         }
     }
 
