@@ -1,0 +1,58 @@
+name: build
+
+on:
+  push:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build_parser:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - run: sudo apt-get install -y gcc-aarch64-linux-gnu
+    - run: rustup target add aarch64-unknown-linux-gnu
+    - run: cargo build --release --target aarch64-unknown-linux-gnu --verbose
+    - uses: actions/upload-artifact@v3
+      with:
+        name: parser
+        path: target/aarch64-unknown-linux-gnu/release/nextbike
+    
+  build_frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: viewer
+    
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 16
+        registry-url: https://registry.npmjs.org/
+    - run: npm ci
+    - run: npm run build
+    - uses: actions/upload-artifact@v3
+      with:
+        name: frontend
+        path: viewer/dist/
+  
+  release:
+    runs-on: ubuntu-latest
+    needs:
+     - build_parser
+     - build_frontend
+    
+    steps:
+    - uses: actions/download-artifact@v3
+    - uses: softprops/action-gh-release@v1
+      with:
+        tag_name: latest
+        name: latest
+        files: |
+          target/aarch64-unknown-linux-gnu/release/nextbike
+          viewer/dist/*
