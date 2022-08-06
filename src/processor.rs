@@ -50,12 +50,13 @@ struct P {
 }
 
 
-pub fn process(timestamp: u32, p: &JSON, state: &mut HashMap::<u32, Record>, stations: &mut Stations, rides: &mut Rides) {
+pub fn process(timestamp: u32, p: &JSON, state: &mut HashMap::<u32, Record>, stations: &mut Stations, rides: &mut Rides) -> u64 {
     if p.countries.len() != 1 {
         error!("Number of countries in {timestamp} is not 1, but {}", p.countries.len());
-        return;
+        return 0;
     }
 
+    let mut total_rides = 0u64;
     for place in &p.countries[0].cities[0].places {
         if place.name.starts_with("BIKE") {
             continue
@@ -85,6 +86,8 @@ pub fn process(timestamp: u32, p: &JSON, state: &mut HashMap::<u32, Record>, sta
                             lng: place.lng,
                         }
                     }).unwrap();
+
+                    total_rides += 1;
                 }
             }
 
@@ -95,6 +98,8 @@ pub fn process(timestamp: u32, p: &JSON, state: &mut HashMap::<u32, Record>, sta
             });
         }
     }
+
+    total_rides
 }
 
 fn clean_name(name: &str) -> String {

@@ -48,8 +48,9 @@ pub fn load_from_disk(input_path: &PathBuf, output_path: &PathBuf, stations: &mu
 
     let files = get_files(input_path).unwrap();
     let bar = LoggingAwareProgressBar::new(files.len() as u64);
-    bar.set_style(indicatif::ProgressStyle::with_template("[{elapsed_precise}] [{wide_bar:.cyan/blue}] {per_sec:7} (ETA {eta_precise:>5})").unwrap().progress_chars("#>-"));
+    bar.set_style(indicatif::ProgressStyle::with_template("[{elapsed_precise}] [{wide_bar:.cyan/blue}] {msg:>10} {per_sec:>10} files (ETA {eta_precise:>5})").unwrap().progress_chars("#>-"));
 
+    let mut total_rides = 0u64;
     for JsonFile{timestamp, path} in files {
         debug!("Processing {path:?}");
 
@@ -58,7 +59,8 @@ pub fn load_from_disk(input_path: &PathBuf, output_path: &PathBuf, stations: &mu
                 let reader = BufReader::with_capacity(1024*1024*5, f);
                 match serde_json::from_reader::<BufReader<File>, JSON>(reader) {
                     Ok(p) => {
-                        process(timestamp, &p, &mut state, stations, &mut rides);
+                        total_rides += process(timestamp, &p, &mut state, stations, &mut rides);
+                        bar.set_message(format!("{total_rides} rides"));
                     }
                     Err(e) => error!("Failed to parse JSON {path:?}: {e:?}"),
                 }
