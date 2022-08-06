@@ -38,32 +38,17 @@
     }
 
     async function y() {
-      const res = await fetch("events.csv");
+      const res = await fetch("rides.json");
       const text = await res.text();
 
-      events = text.split("\n").map((line) => {
-        if (!line.length) return;
-        let [id, tsSrc, src, tsDst, dst, srcLat, srcLng, dstLat, dstLng] =
-          line.split(", ");
-
-          tsSrc = new Date(tsSrc * 1000);
-          tsDst = new Date(tsDst * 1000);
-
-        return {
-          id,
-          tsSrc,
-          src,
-          tsDst,
-          dst,
-          srcLat,
-          srcLng,
-          dstLat,
-          dstLng,
-        };
-
-      }).filter(el => el);
-
-      current = events[0].tsSrc;
+      events = text.split("\n").filter(line => line.length > 0).map((line) => {
+        let ride = JSON.parse(line);
+        ride.src.timestamp = new Date(ride.src.timestamp * 1000);
+        ride.dst.timestamp = new Date(ride.dst.timestamp * 1000);
+        return ride;
+      });
+      
+      current = events[0].src.timestamp;
 
       console.log(events);
       start(true);
@@ -78,7 +63,7 @@
   function tick() {
     active = active.filter(a => {
       const t = events[a.index];
-      if(current > t.tsDst  || t.tsSrc > current) {
+      if(current > t.dst.timestamp  || t.src.timestamp > current) {
         a.marker.remove(M);
         a.polyline.remove(M);
         return false;
@@ -89,13 +74,13 @@
 
     for(; head < events.length; head++) {
       const t = events[head];
-      if(t.tsSrc > current) {
+      if(t.src.timestamp > current) {
         break;
       }
 
-      if(t.tsDst > current && !active.find((el) => el.index == head)) {
-        let marker = L.marker([t.srcLat, t.srcLng], {icon: icon}).addTo(M);
-        var polyline = L.polyline([[t.srcLat, t.srcLng],[t.dstLat, t.dstLng]], {color: 'red'}).addTo(M);
+      if(t.dst.timestamp > current && !active.find((el) => el.index == head)) {
+        let marker = L.marker([t.src.lat, t.src.lng], {icon: icon}).addTo(M);
+        var polyline = L.polyline([[t.src.lat, t.src.lng],[t.dst.lat, t.dst.lng]], {color: 'red'}).addTo(M);
 
         active.push({
           index: head,
@@ -122,11 +107,11 @@
 
     for(const a of active) {
       const b = events[a.index];
-      const t = b.tsDst - current;
+      const t = b.dst.timestamp - current;
       
       let pos = a.marker.getLatLng();
-      pos.lat += (b.dstLat - pos.lat) / t * 1000;
-      pos.lng += (b.dstLng - pos.lng) / t * 1000;
+      pos.lat += (b.dst.lat - pos.lat) / t * 1000;
+      pos.lng += (b.dst.lng - pos.lng) / t * 1000;
       a.marker.setLatLng(pos);
     }
 

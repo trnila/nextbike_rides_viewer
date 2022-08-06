@@ -1,13 +1,14 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Result;
+use std::collections::hash_map::Entry;
 use std::fs;
-use std::io;
-use std::io::LineWriter;
+use std::fs::OpenOptions;
+use std::io::BufWriter;
 use std::io::prelude::*;
 use std::fs::File;
 use std::io::BufReader;
 use std::collections::HashMap;
-use std::collections::HashSet;
+use regex::Regex;
+use log::{debug, error};
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -17,6 +18,7 @@ struct Bike {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Place {
+    uid: StationId,
     lat: f32,
     lng: f32,
     name: String,
@@ -42,7 +44,8 @@ struct JSON {
 #[derive(Serialize, Deserialize, Debug)]
 struct Record {
     station: String,
-    timestamp: u32,
+    station_uid: StationId,
+    timestamp: u64,
 }
 
 struct JsonFile {
@@ -51,91 +54,218 @@ struct JsonFile {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+struct CsvStation {
+    name: String,
+    lat: f32,
+    lng: f32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 struct Position {
     lat: f32,
     lng: f32,
 }
 
-fn main() {
-    println!("Hello, world!");
 
-    let mut state = HashMap::<u32, Record>::new();
+#[derive(Serialize, Deserialize, Debug)]
+struct Station {
+    name: String,
+    lat: f32,
+    lng: f32,
+}
 
-    let mut paths: Vec<JsonFile> = fs::read_dir("data").unwrap().map(|p| {
-        let path = p.unwrap().path();
-        JsonFile{
-            path: path.clone(),
-            timestamp: path.file_stem().unwrap().to_str().unwrap().parse::<u32>().unwrap(),
+type StationId = u32;
+
+struct Stations {
+    stations: HashMap::<StationId, Station>,
+    path: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Locatin {
+    timestamp: u64,
+    name: String,
+    lat: f32,
+    lng: f32,
+}
+
+
+#[derive(Serialize, Deserialize, Debug)]
+struct CsvRide {
+    bike_id: u32,
+
+    src: P,
+    dst: P,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct P {
+    timestamp: u64,
+    name: String,
+    lat: f32,
+    lng: f32
+}
+
+
+fn process(timestamp: u32, p: &JSON, state: &mut HashMap::<u32, Record>, stations: &mut Stations, w: &mut BufWriter<File>) {
+    if p.countries.len() != 1 {
+        return;
+    }
+
+    for place in &p.countries[0].cities[0].places {
+        if place.name.starts_with("BIKE") {
+            continue
         }
-    }).collect();
 
-    paths.sort_by_key(|p| p.timestamp);
+        stations.add_station(place.uid, &place.name, place.lat, place.lng);
 
-    let mut stations = HashMap::<String, Position>::new();
+        for bike in &place.bike_list {
+            //println!("x{:?}", bike.number.parse::<i32>().unwrap());
+            let id = bike.number.parse::<u32>().unwrap();
 
+            if let Some(rec) = state.get(&id) {
+                if rec.station_uid != place.uid {
+                    let s = stations.stations.get(&rec.station_uid).unwrap();
 
-    let mut buf = [0u8; 5 * 1024 * 1024];
-    for JsonFile{timestamp, path} in paths {
-        //let ppp = path.unwrap();
-        //let ts = ppp.path().file_stem().unwrap().to_str().unwrap().parse::<u32>().unwrap();
-
-        //let data = fs::read_to_string(&path.unwrap().path()).expect("Unable to read file");
-        let f = File::open(&path).unwrap();
-        //let mut data = String::new();
-        //f.read_to_string(&mut data);
-        
-        //f.read(&mut buf);
-
-        let reader = BufReader::with_capacity(1024*1024*5, f);
-        match serde_json::from_reader::<BufReader<File>, JSON>(reader) {
-            Ok(p) => {
-                if p.countries.len() != 1 {
-                    continue
-                }
-
-                for place in &p.countries[0].cities[0].places {
-                    if place.name.starts_with("BIKE") {
-                        continue
-                    }
-
-                    stations.insert(place.name.clone(), Position { lat: place.lat, lng: place.lng });
-
-                    for bike in &place.bike_list {
-                        //println!("x{:?}", bike.number.parse::<i32>().unwrap());
-                        let id = bike.number.parse::<u32>().unwrap();
-
-                        if let Some(rec) = state.get(&id) {
-                            if rec.station != place.name {
-                                //println!("{:?} moved to {:?} {}", rec, place.name, timestamp - rec.timestamp);
-                                println!(
-                                    "{}, {}, {}, {}, {}, {}, {}, {}, {}",
-                                    id, rec.timestamp, rec.station.replace(',', " "), timestamp, place.name.replace(',', " "),
-                                    stations.get(&rec.station).unwrap().lat, stations.get(&rec.station).unwrap().lng,
-                                    place.lat, place.lng
-                                );
-                            }
+                    serde_json::to_writer(&mut *w, &CsvRide{
+                        bike_id: id,
+                        src: P{
+                            timestamp: rec.timestamp,
+                            name: clean_name(&rec.station),
+                            lat: s.lat,
+                            lng: s.lng,
+                        },
+                        dst: P {
+                            timestamp: timestamp as u64,
+                            name: clean_name(&place.name),
+                            lat: place.lat,
+                            lng: place.lng,
                         }
+                    }).unwrap();
 
-                        state.insert(id, Record{
-                            timestamp: timestamp,
-                            station: place.name.clone(),
-                        });
-                    }
+                    w.write_all(b"\n").unwrap();
                 }
             }
-            Err(e) => println!("errr: {:?}", e),
+
+            state.insert(id, Record{
+                timestamp: timestamp as u64,
+                station: place.name.clone(),
+                station_uid: place.uid,
+            });
         }
+    }
+}
 
+fn clean_name(name: &str) -> String {
+    let re = Regex::new(r"\*?\(.+").unwrap();
+    return re.replace(name, "").to_string().trim().to_string();
+}
 
-        //let p: JSON = serde_json::from_str(&data).unwrap();
-        //println!("{:?}", p)
+fn get_files(path: &str) -> Option<Vec<JsonFile>> {
+    match fs::read_dir(path) {
+        Ok(files_iter) => {
+            let mut files: Vec<JsonFile> = files_iter.filter_map(|path| {
+                match path {
+                    Ok(path) => {
+                        match path.path().file_stem() {
+                            Some(stem) =>{
+                                Some(JsonFile{
+                                    path: path.path().clone(),
+                                    timestamp: stem.to_str().unwrap().parse::<u32>().unwrap(),
+                                })
+                            }
+                            None => {
+                                error!("Stem for path {path:?} not found.");
+                                None
+                            }
+                        }
+                    }
+                    Err(_e) => unreachable!()
+                }                
+            }).collect();
+            files.sort_by_key(|p| p.timestamp);
+            Some(files)
+        }
+        Err(x) => {
+            error!("Failed to list files in {}: {:?}", path, x);
+            None
+        }
+    }
+}
 
+impl Stations {
+    fn new(path: &str) -> Stations {
+        let stations: HashMap::<StationId, Station> = match File::open(path) {
+            Ok(f) => serde_json::from_reader(BufReader::new(f)).unwrap(),
+            Err(err) => match err.kind() {
+                std::io::ErrorKind::NotFound => HashMap::<StationId, Station>::new(),
+                _ => panic!(),
+            }
+        };
+
+        Stations {
+            stations,
+            path: path.to_string(),
+        }
     }
 
-    let mut w = LineWriter::new(File::create("stations.csv").unwrap());
-    for (name, pos) in stations.into_iter() {
-        writeln!(w, "{}, {}, {}", name.replace(',', " "), pos.lat, pos.lng);
-    }
+    fn add_station(&mut self, id: StationId, name: &str, lat: f32, lng: f32) {
+        match self.stations.entry(id) {
+            Entry::Vacant(v) => {
+                v.insert(Station{
+                    name: name.to_string(),
+                    lat,
+                    lng
+                });
 
-//    println!("{:?}", stations)
+                let w = OpenOptions::new().create(true).write(true).open(&self.path).unwrap();
+                serde_json::to_writer_pretty(w, &self.stations).unwrap();
+            }
+            Entry::Occupied(_) => (),
+        }
+    }
+}
+
+
+fn load_from_disk(path: &str) {
+    let mut state = HashMap::<u32, Record>::new();
+    let mut s = Stations::new("viewer/public/stations.json");
+
+    let f = OpenOptions::new().write(true).create(true).open("viewer/public/rides.json").unwrap();
+    let mut w = BufWriter::new(f);
+
+    for JsonFile{timestamp, path} in get_files(path).unwrap() {
+        debug!("Processing {path:?}");
+
+        match File::open(&path) {
+            Ok(f) => {
+                let reader = BufReader::with_capacity(1024*1024*5, f);
+                match serde_json::from_reader::<BufReader<File>, JSON>(reader) {
+                    Ok(p) => {
+                        process(timestamp, &p, &mut state, &mut s, &mut w);
+                    }
+                    Err(e) => error!("Failed to parse json: {:?}", e),
+                }
+            }
+            Err(e) => error!("Failed to open file: {e}")
+        }
+    }
+}
+
+fn main() {
+    env_logger::init();
+
+    load_from_disk("data");
+
+//    let body = reqwest::blocking::get("https://api.nextbike.net/maps/nextbike-live.json?city=271").unwrap()
+    //.text().unwrap();
+    /*
+    println!("body = {:?}", body);
+    match serde_json::from_str(&body) {
+        Ok(p) => {
+            process(SystemTime::now().elapsed().unwrap().as_secs().try_into().unwrap(), &p, &mut state, &mut stations);
+        }
+        Err(e) => println!("errr: {:?}", e)
+    }
+    */
 }
