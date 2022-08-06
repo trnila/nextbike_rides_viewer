@@ -60,7 +60,7 @@ pub fn load_from_disk(input_path: &PathBuf, output_path: &PathBuf, stations: &mu
                     Ok(p) => {
                         process(timestamp, &p, &mut state, stations, &mut rides);
                     }
-                    Err(e) => error!("Failed to parse json: {:?}", e),
+                    Err(e) => error!("Failed to parse JSON {path:?}: {e:?}"),
                 }
             }
             Err(e) => error!("Failed to open file: {e}")

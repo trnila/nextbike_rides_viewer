@@ -1,6 +1,7 @@
 use std::{collections::HashMap, io::BufWriter, fs::File};
 use std::io::Write;
 
+use log::error;
 use regex::Regex;
 use serde::{Serialize, Deserialize};
 
@@ -51,6 +52,7 @@ struct P {
 
 pub fn process(timestamp: u32, p: &JSON, state: &mut HashMap::<u32, Record>, stations: &mut Stations, rides: &mut Rides) {
     if p.countries.len() != 1 {
+        error!("Number of countries in {timestamp} is not 1, but {}", p.countries.len());
         return;
     }
 
