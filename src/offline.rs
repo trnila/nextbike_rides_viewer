@@ -53,14 +53,19 @@ pub fn load_from_disk(input_path: &PathBuf, output_path: &PathBuf, stations: Sta
     for JsonFile{timestamp, path} in files {
         debug!("Processing {path:?}");
 
-        match std::fs::read_to_string(&path) {
-            Ok(str) => {
-                match serde_json::from_str::<JSON>(&str) {
-                    Ok(json) => {
-                        total_rides += processor.process(timestamp, &json);
-                        bar.set_message(format!("{total_rides} rides"));
+        match File::open(&path) {
+            Ok(file) => {
+                match unsafe { memmap::MmapOptions::new().map(&file) } {
+                    Ok(mmap) => {
+                        match serde_json::from_slice(&mmap) {
+                            Ok(json) => {
+                                total_rides += processor.process(timestamp, &json);
+                                bar.set_message(format!("{total_rides} rides"));
+                            }
+                            Err(e) => error!("Failed to parse JSON {path:?}: {e:?}"),
+                        }
                     }
-                    Err(e) => error!("Failed to parse JSON {path:?}: {e:?}"),
+                    Err(e) => error!("Failed to mmap: {e}"),
                 }
             }
             Err(e) => error!("Failed to open file: {e}")
