@@ -20,5 +20,7 @@ jobs:
     
     - uses: softprops/action-gh-release@v1
       with:
+        tag_name: latest
+        name: latest
         files: |
           target/aarch64-unknown-linux-gnu/release/nextbike
