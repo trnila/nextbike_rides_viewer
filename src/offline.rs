@@ -17,11 +17,14 @@ fn get_files(path: &PathBuf) -> Option<Vec<JsonFile>> {
                 match path {
                     Ok(path) => {
                         match path.path().file_stem() {
-                            Some(stem) =>{
-                                Some(JsonFile{
-                                    path: path.path().clone(),
-                                    timestamp: stem.to_str().unwrap().parse::<u64>().unwrap(),
-                                })
+                            Some(stem) => {
+                                match stem.to_str().unwrap().parse::<u64>() {
+                                    Ok(timestamp) => Some(JsonFile{path: path.path().clone(), timestamp}),
+                                    Err(err) => {
+                                        error!("Could not parse timestamp from {path:?}: {err}");
+                                        None
+                                    }
+                                }
                             }
                             None => {
                                 error!("Stem for path {path:?} not found.");
