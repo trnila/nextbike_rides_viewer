@@ -98,14 +98,12 @@ impl RidesProcessor {
             self.stations.add_station(place.uid, &place.name, place.lat, place.lng);
 
             for bike in &place.bike_list {
-                let id = bike.number.parse::<u32>().unwrap();
-
-                if let Some(rec) = self.state.get(&id) {
+                if let Some(rec) = self.state.get(&bike.number) {
                     if rec.station_uid != place.uid {
                         let s = self.stations.stations.get(&rec.station_uid).unwrap();
 
                         self.rides.write(&CsvRide{
-                            bike_id: id,
+                            bike_id: bike.number,
                             src: P{
                                 timestamp: rec.timestamp,
                                 name: clean_name(&rec.station),
@@ -124,7 +122,7 @@ impl RidesProcessor {
                     }
                 }
 
-                self.state.insert(id, Record{
+                self.state.insert(bike.number, Record{
                     timestamp: timestamp as u64,
                     station: place.name.clone(),
                     station_uid: place.uid,

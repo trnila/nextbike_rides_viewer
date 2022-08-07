@@ -1,10 +1,13 @@
-use serde::Deserialize;
+use std::{str::FromStr, fmt::{Display, self}};
+
+use serde::{Deserialize, Deserializer, de};
 
 pub type StationId = u32;
 
 #[derive(Deserialize, Debug)]
 pub struct Bike {
-    pub number: String,
+    #[serde(deserialize_with = "from_str")]
+    pub number: u32,
 }
 
 #[derive(Deserialize, Debug)]
@@ -30,4 +33,31 @@ pub struct Countries {
 #[derive(Deserialize, Debug)]
 pub struct JSON {
     pub countries: Vec<Countries>,
+}
+
+fn from_str<'de, D>(deserializer: D) -> Result<u32, D::Error>
+    where 
+          D: Deserializer<'de>
+{
+
+    struct MyVisitor;
+    impl<'de> de::Visitor<'de> for MyVisitor {
+        type Value = u32;
+
+        fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            fmt.write_str("integer in string")
+        }
+
+        fn visit_str<E>(self, val: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match val.parse::<u32>() {
+                    Ok(val) => Ok(val),
+                    Err(_) => Err(E::custom("failed to parse integer")),
+                }
+            }
+    }
+
+    deserializer.deserialize_any(MyVisitor)
 }
