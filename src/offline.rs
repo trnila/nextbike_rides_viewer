@@ -22,7 +22,7 @@ fn get_files(path: &PathBuf) -> Option<Vec<JsonFile>> {
                     Ok(path) => match path.path().file_stem() {
                         Some(stem) => match stem.to_str().unwrap().parse::<u64>() {
                             Ok(timestamp) => Some(JsonFile {
-                                path: path.path().clone(),
+                                path: path.path(),
                                 timestamp,
                             }),
                             Err(err) => {

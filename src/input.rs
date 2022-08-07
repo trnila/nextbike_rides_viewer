@@ -39,7 +39,7 @@ pub struct Countries<'a> {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct JSON<'a> {
+pub struct JsonResponse<'a> {
     #[serde(borrow)]
     pub countries: Vec<Countries<'a>>,
 }

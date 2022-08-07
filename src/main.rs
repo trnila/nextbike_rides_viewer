@@ -7,6 +7,7 @@ use stations::Stations;
 use std::fmt::Display;
 use std::fs;
 
+use std::path::Path;
 use std::path::PathBuf;
 use std::thread;
 use std::time;
@@ -34,9 +35,9 @@ pub struct Record {
 
 #[derive(Debug)]
 enum ParseDurationError {
-    ParseIntError(std::num::ParseIntError),
-    InvalidUnitError(char),
-    NoDurationError,
+    ParseInt(std::num::ParseIntError),
+    InvalidUnit(char),
+    NoDuration,
 }
 
 impl std::error::Error for ParseDurationError {}
@@ -44,24 +45,24 @@ impl std::error::Error for ParseDurationError {}
 impl Display for ParseDurationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ParseDurationError::ParseIntError(_err) => write!(f, "Invalid number"),
-            ParseDurationError::InvalidUnitError(unit) => write!(f, "Invalid unit: {unit}"),
-            ParseDurationError::NoDurationError => write!(f, "No duration provided"),
+            ParseDurationError::ParseInt(_err) => write!(f, "Invalid number"),
+            ParseDurationError::InvalidUnit(unit) => write!(f, "Invalid unit: {unit}"),
+            ParseDurationError::NoDuration => write!(f, "No duration provided"),
         }
     }
 }
 
 impl From<std::num::ParseIntError> for ParseDurationError {
     fn from(err: std::num::ParseIntError) -> Self {
-        ParseDurationError::ParseIntError(err)
+        ParseDurationError::ParseInt(err)
     }
 }
 
 fn parse_duration(arg: &str) -> Result<std::time::Duration, ParseDurationError> {
     match arg.chars().last() {
-        None => Err(ParseDurationError::NoDurationError),
+        None => Err(ParseDurationError::NoDuration),
         Some(c) => {
-            if c.is_digit(10) {
+            if c.is_ascii_digit() {
                 let value: u64 = arg.parse()?;
                 return Ok(Duration::from_secs(value));
             }
@@ -72,7 +73,7 @@ fn parse_duration(arg: &str) -> Result<std::time::Duration, ParseDurationError> 
                 'm' => Ok(Duration::from_secs(value * 60)),
                 'h' => Ok(Duration::from_secs(value * 60 * 60)),
                 'd' => Ok(Duration::from_secs(value * 60 * 60 * 24)),
-                _ => Err(ParseDurationError::InvalidUnitError(c)),
+                _ => Err(ParseDurationError::InvalidUnit(c)),
             }
         }
     }
@@ -141,7 +142,7 @@ fn main() {
     }
 }
 
-fn scrap_data(input_dir: &PathBuf, processor: &mut RidesProcessor) {
+fn scrap_data(input_dir: &Path, processor: &mut RidesProcessor) {
     let ts = SystemTime::now()
         .duration_since(time::UNIX_EPOCH)
         .unwrap()
@@ -157,7 +158,7 @@ fn scrap_data(input_dir: &PathBuf, processor: &mut RidesProcessor) {
                     error!("Failed to store response {path:?}: {err}");
                 }
 
-                match serde_json::from_str::<JSON>(&body) {
+                match serde_json::from_str::<JsonResponse>(&body) {
                     Ok(json) => {
                         let rides = processor.process(ts, &json);
                         debug!("{rides} new rides found");

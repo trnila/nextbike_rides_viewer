@@ -7,7 +7,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::rides::Rides;
-use crate::{input::JSON, stations::Stations, Record};
+use crate::{input::JsonResponse, stations::Stations, Record};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct CsvStation {
@@ -63,7 +63,7 @@ impl RidesProcessor {
         }
     }
 
-    pub fn process(&mut self, timestamp: u64, json: &JSON) -> u64 {
+    pub fn process(&mut self, timestamp: u64, json: &JsonResponse) -> u64 {
         if json.countries.len() != 1 {
             error!(
                 "Number of countries in {timestamp} is not 1, but {}",
