@@ -1,4 +1,4 @@
-use std::{str::FromStr, fmt::{Display, self}};
+use std::{str::FromStr, fmt::{Display, self}, borrow::Cow};
 
 use serde::{Deserialize, Deserializer, de};
 
@@ -11,28 +11,33 @@ pub struct Bike {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct Place {
+pub struct Place<'a> {
     pub uid: StationId,
     pub lat: f32,
     pub lng: f32,
-    pub name: String,
+    #[serde(borrow)]
+    pub name: Cow<'a, str>,
     pub bike_list: Vec<Bike>,
 }
 
 #[derive(Deserialize, Debug)]
-pub struct Cities {
-    pub name: String,
-    pub places: Vec<Place>,
+pub struct Cities<'a> {
+    #[serde(borrow)]
+    pub name: Cow<'a, str>,
+    #[serde(borrow)]
+    pub places: Vec<Place<'a>>,
 }
 
 #[derive(Deserialize, Debug)]
-pub struct Countries {
-    pub cities: Vec<Cities>,
+pub struct Countries<'a> {
+    #[serde(borrow)]
+    pub cities: Vec<Cities<'a>>,
 }
 
 #[derive(Deserialize, Debug)]
-pub struct JSON {
-    pub countries: Vec<Countries>,
+pub struct JSON<'a> {
+    #[serde(borrow)]
+    pub countries: Vec<Countries<'a>>,
 }
 
 fn from_str<'de, D>(deserializer: D) -> Result<u32, D::Error>
