@@ -4,6 +4,7 @@ use std::io::Write;
 
 use log::{error, warn};
 use regex::Regex;
+use lazy_static::lazy_static;
 use serde::{Serialize, Deserialize};
 
 use crate::rides::Rides;
@@ -135,6 +136,9 @@ impl RidesProcessor {
 }
 
 fn clean_name(name: &str) -> String {
-    let re = Regex::new(r"\*?\(.+").unwrap();
-    return re.replace(name, "").to_string().trim().to_string();
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\*?\(.+").unwrap();
+    }
+
+    return RE.replace(name, "").to_string().trim().to_string();
 }
