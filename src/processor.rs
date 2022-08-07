@@ -106,7 +106,7 @@ impl RidesProcessor {
                             bike_id: bike.number,
                             src: P{
                                 timestamp: rec.timestamp,
-                                name: clean_name(&rec.station),
+                                name: clean_name(&self.stations.stations.get(&rec.station_uid).unwrap().name),
                                 lat: s.lat,
                                 lng: s.lng,
                             },
@@ -124,7 +124,6 @@ impl RidesProcessor {
 
                 self.state.insert(bike.number, Record{
                     timestamp: timestamp as u64,
-                    station: place.name.clone(),
                     station_uid: place.uid,
                 });
             }

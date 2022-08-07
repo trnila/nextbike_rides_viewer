@@ -40,7 +40,6 @@ use processor::*;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Record {
-    station: String,
     station_uid: StationId,
     timestamp: u64,
 }
