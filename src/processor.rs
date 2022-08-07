@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
+use chrono::NaiveDateTime;
 use lazy_static::lazy_static;
-use log::{error, warn};
+use log::{error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -74,20 +75,29 @@ impl RidesProcessor {
                     if rec.station_uid != place.uid {
                         let s = self.stations.stations.get(&rec.station_uid).unwrap();
 
+                        let src_name =
+                            clean_name(&self.stations.stations.get(&rec.station_uid).unwrap().name);
+                        let dst_name = clean_name(&place.name);
+
+                        info!(
+                            "{} Bike {} moved from {src_name} to {dst_name} in {} minutes",
+                            NaiveDateTime::from_timestamp(rec.timestamp as i64, 0),
+                            bike.number,
+                            (timestamp - rec.timestamp) / 60
+                        );
+
                         self.rides
                             .write(&RideEvent {
                                 bike_id: bike.number,
                                 src: RideLocation {
                                     timestamp: rec.timestamp,
-                                    name: clean_name(
-                                        &self.stations.stations.get(&rec.station_uid).unwrap().name,
-                                    ),
+                                    name: src_name,
                                     lat: s.lat,
                                     lng: s.lng,
                                 },
                                 dst: RideLocation {
-                                    timestamp: timestamp as u64,
-                                    name: clean_name(&place.name),
+                                    timestamp,
+                                    name: dst_name,
                                     lat: place.lat,
                                     lng: place.lng,
                                 },
