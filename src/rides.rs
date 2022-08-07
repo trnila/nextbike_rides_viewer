@@ -1,4 +1,8 @@
-use std::{io::{BufWriter, Write}, fs::{File, OpenOptions}, path::PathBuf};
+use std::{
+    fs::{File, OpenOptions},
+    io::{BufWriter, Write},
+    path::PathBuf,
+};
 
 use crate::processor::CsvRide;
 
@@ -7,7 +11,6 @@ pub struct Rides {
     flush: bool,
 }
 
-
 impl Rides {
     pub fn new(path: &PathBuf, append: bool) -> Self {
         let f = OpenOptions::new()
@@ -15,7 +18,8 @@ impl Rides {
             .create(true)
             .append(append)
             .truncate(!append)
-            .open(path).unwrap();
+            .open(path)
+            .unwrap();
         Rides {
             writer: BufWriter::new(f),
             flush: append,

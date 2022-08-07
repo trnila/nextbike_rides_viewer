@@ -3,39 +3,38 @@ use indicatif::ProgressBar;
 use log::Level;
 use log::LevelFilter;
 use log::Metadata;
+use log::{debug, error};
 use logging::LoggingAwareProgressBar;
+use regex::Regex;
 use rides::Rides;
 use serde::{Deserialize, Serialize};
 use stations::Stations;
 use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs;
+use std::fs::File;
 use std::fs::OpenOptions;
+use std::io::prelude::*;
+use std::io::BufReader;
 use std::io::BufWriter;
 use std::path::PathBuf;
-use std::io::prelude::*;
-use std::fs::File;
-use std::io::BufReader;
-use std::collections::HashMap;
 use std::thread;
 use std::time;
 use std::time::Duration;
 use std::time::SystemTime;
-use regex::Regex;
-use log::{debug, error};
 
 use clap::{Parser, Subcommand};
 
-
 mod input;
+mod logging;
 mod offline;
 mod processor;
-mod stations;
 mod rides;
-mod logging;
+mod stations;
 
-use offline::*;
 use input::*;
+use offline::*;
 use processor::*;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -78,7 +77,7 @@ fn parse_duration(arg: &str) -> Result<std::time::Duration, ParseDurationError> 
                 return Ok(Duration::from_secs(value));
             }
 
-            let value = arg[0 .. arg.len() - 1].parse()?;
+            let value = arg[0..arg.len() - 1].parse()?;
             match c {
                 's' => Ok(Duration::from_secs(value)),
                 'm' => Ok(Duration::from_secs(value * 60)),
@@ -93,13 +92,28 @@ fn parse_duration(arg: &str) -> Result<std::time::Duration, ParseDurationError> 
 #[derive(Parser)]
 #[clap(version, about)]
 struct Cli {
-    #[clap(short, long, help="path to output JSON", default_value="./viewer/public/rides.json")]
+    #[clap(
+        short,
+        long,
+        help = "path to output JSON",
+        default_value = "./viewer/public/rides.json"
+    )]
     rides_path: PathBuf,
 
-    #[clap(short, long, help="path to output JSON", default_value="./viewer/public/stations.json")]
+    #[clap(
+        short,
+        long,
+        help = "path to output JSON",
+        default_value = "./viewer/public/stations.json"
+    )]
     stations_path: PathBuf,
 
-    #[clap(short, long, help="directory with input JSONs", default_value="./data/")]
+    #[clap(
+        short,
+        long,
+        help = "directory with input JSONs",
+        default_value = "./data/"
+    )]
     input_dir: PathBuf,
 
     #[clap(subcommand)]
@@ -124,14 +138,14 @@ fn main() {
 
     match cli.command {
         Commands::Online { interval } => {
-            let mut processor = RidesProcessor::new(stations, Rides::new_appending(&cli.rides_path));
+            let mut processor =
+                RidesProcessor::new(stations, Rides::new_appending(&cli.rides_path));
 
             loop {
                 scrap_data(&cli.input_dir, &mut processor);
                 thread::sleep(interval);
             }
-
-        },
+        }
         Commands::Offline => {
             load_from_disk(&cli.input_dir, &cli.rides_path, stations);
         }
@@ -139,29 +153,30 @@ fn main() {
 }
 
 fn scrap_data(input_dir: &PathBuf, processor: &mut RidesProcessor) {
-    let ts = SystemTime::now().duration_since(time::UNIX_EPOCH).unwrap().as_secs();
+    let ts = SystemTime::now()
+        .duration_since(time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
 
     debug!("Downloading new data at {ts}");
     match reqwest::blocking::get("https://api.nextbike.net/maps/nextbike-live.json?city=271") {
-        Ok(resp) => {
-            match resp.text() {
-                Ok(body) => {
-                    let path = input_dir.join(format!("{ts}.json"));
+        Ok(resp) => match resp.text() {
+            Ok(body) => {
+                let path = input_dir.join(format!("{ts}.json"));
 
-                    if let Err(err) = fs::write(&path, &body) {
-                        error!("Failed to store response {path:?}: {err}");
+                if let Err(err) = fs::write(&path, &body) {
+                    error!("Failed to store response {path:?}: {err}");
+                }
+
+                match serde_json::from_str::<JSON>(&body) {
+                    Ok(json) => {
+                        let rides = processor.process(ts, &json);
+                        debug!("{rides} new rides found");
                     }
-
-                    match serde_json::from_str::<JSON>(&body) {
-                        Ok(json) => {
-                            let rides = processor.process(ts, &json);
-                            debug!("{rides} new rides found");
-                        }
-                        Err(err) => error!("Failed to parse json: {err}"),
-                    }                                
-                },
-                Err(err) => error!("Failed to parse response: {err}"),
+                    Err(err) => error!("Failed to parse json: {err}"),
+                }
             }
+            Err(err) => error!("Failed to parse response: {err}"),
         },
         Err(err) => error!("Failed to fetch: {err}"),
     }

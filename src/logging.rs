@@ -31,14 +31,13 @@ impl log::Log for Logger {
 
 impl Logger {
     pub fn init() {
-        let logger = env_logger::Builder::from_default_env().build();   
+        let logger = env_logger::Builder::from_default_env().build();
         let max_level = logger.filter();
 
-        log::set_boxed_logger(Box::new(Logger{logger})).unwrap();
+        log::set_boxed_logger(Box::new(Logger { logger })).unwrap();
         log::set_max_level(max_level);
     }
 }
-
 
 pub struct LoggingAwareProgressBar {
     bar: Arc<ProgressBar>,
