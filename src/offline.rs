@@ -1,17 +1,12 @@
-use indicatif::ProgressBar;
 use std::{
-    collections::HashMap,
-    fs::{self, File, OpenOptions},
-    io::{BufReader, BufWriter},
+    fs::{self, File},
     path::PathBuf,
-    sync::{Arc, Weak},
 };
 
 use log::{debug, error};
 
 use crate::{
-    input::JSON, logging::LoggingAwareProgressBar, processor::RidesProcessor, rides::Rides,
-    stations::Stations, Record,
+    logging::LoggingAwareProgressBar, processor::RidesProcessor, rides::Rides, stations::Stations,
 };
 
 struct JsonFile {

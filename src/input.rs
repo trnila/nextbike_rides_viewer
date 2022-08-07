@@ -1,7 +1,6 @@
 use std::{
     borrow::Cow,
-    fmt::{self, Display},
-    str::FromStr,
+    fmt::{self},
 };
 
 use serde::{de, Deserialize, Deserializer};

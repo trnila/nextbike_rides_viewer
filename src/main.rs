@@ -1,23 +1,12 @@
-use env_logger::Logger;
-use indicatif::ProgressBar;
-use log::Level;
-use log::LevelFilter;
-use log::Metadata;
 use log::{debug, error};
-use logging::LoggingAwareProgressBar;
-use regex::Regex;
+
 use rides::Rides;
 use serde::{Deserialize, Serialize};
 use stations::Stations;
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+
 use std::fmt::Display;
 use std::fs;
-use std::fs::File;
-use std::fs::OpenOptions;
-use std::io::prelude::*;
-use std::io::BufReader;
-use std::io::BufWriter;
+
 use std::path::PathBuf;
 use std::thread;
 use std::time;

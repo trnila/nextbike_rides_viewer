@@ -1,6 +1,5 @@
-use std::io::Write;
+use std::collections::HashMap;
 use std::time::Duration;
-use std::{collections::HashMap, fs::File, io::BufWriter};
 
 use lazy_static::lazy_static;
 use log::{error, warn};
