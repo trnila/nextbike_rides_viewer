@@ -1,9 +1,5 @@
 use log::{debug, error};
 
-use rides::Rides;
-use serde::{Deserialize, Serialize};
-use stations::Stations;
-
 use std::fmt::Display;
 use std::fs;
 
@@ -16,22 +12,18 @@ use std::time::SystemTime;
 
 use clap::{Parser, Subcommand};
 
+use crate::input::JsonResponse;
+use crate::offline::load_from_disk;
+use crate::processor::RidesProcessor;
+use crate::rides::Rides;
+use crate::stations::Stations;
+
 mod input;
 mod logging;
 mod offline;
 mod processor;
 mod rides;
 mod stations;
-
-use input::*;
-use offline::*;
-use processor::*;
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Record {
-    station_uid: StationId,
-    timestamp: u64,
-}
 
 #[derive(Debug)]
 enum ParseDurationError {

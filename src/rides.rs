@@ -4,7 +4,23 @@ use std::{
     path::PathBuf,
 };
 
-use crate::processor::CsvRide;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RideEvent {
+    pub bike_id: u32,
+
+    pub src: RideLocation,
+    pub dst: RideLocation,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RideLocation {
+    pub timestamp: u64,
+    pub name: String,
+    pub lat: f32,
+    pub lng: f32,
+}
 
 pub struct Rides {
     writer: BufWriter<File>,
@@ -34,7 +50,7 @@ impl Rides {
         Self::new(path, true)
     }
 
-    pub fn write(&mut self, ride: &CsvRide) -> Result<(), ()> {
+    pub fn write(&mut self, ride: &RideEvent) -> Result<(), ()> {
         serde_json::to_writer(&mut self.writer, ride).unwrap();
         self.writer.write_all(b"\n").unwrap();
 

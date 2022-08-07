@@ -1,7 +1,4 @@
-use std::{
-    borrow::Cow,
-    fmt::{self},
-};
+use std::{borrow::Cow, fmt};
 
 use serde::{de, Deserialize, Deserializer};
 

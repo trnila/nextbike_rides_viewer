@@ -9,19 +9,19 @@ use crate::{
     logging::LoggingAwareProgressBar, processor::RidesProcessor, rides::Rides, stations::Stations,
 };
 
-struct JsonFile {
+struct JsonFileSource {
     path: std::path::PathBuf,
     timestamp: u64,
 }
 
-fn get_files(path: &PathBuf) -> Option<Vec<JsonFile>> {
+fn get_files(path: &PathBuf) -> Option<Vec<JsonFileSource>> {
     match fs::read_dir(path) {
         Ok(files_iter) => {
-            let mut files: Vec<JsonFile> = files_iter
+            let mut files: Vec<JsonFileSource> = files_iter
                 .filter_map(|path| match path {
                     Ok(path) => match path.path().file_stem() {
                         Some(stem) => match stem.to_str().unwrap().parse::<u64>() {
-                            Ok(timestamp) => Some(JsonFile {
+                            Ok(timestamp) => Some(JsonFileSource {
                                 path: path.path(),
                                 timestamp,
                             }),
@@ -56,7 +56,7 @@ pub fn load_from_disk(input_path: &PathBuf, output_path: &PathBuf, stations: Sta
     bar.set_style(indicatif::ProgressStyle::with_template("[{elapsed_precise}] [{wide_bar:.cyan/blue}] {msg:>10} {per_sec:>10} files (ETA {eta_precise:>5})").unwrap().progress_chars("#>-"));
 
     let mut total_rides = 0u64;
-    for JsonFile { timestamp, path } in files {
+    for JsonFileSource { timestamp, path } in files {
         debug!("Processing {path:?}");
 
         match File::open(&path) {

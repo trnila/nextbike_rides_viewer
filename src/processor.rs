@@ -6,49 +6,19 @@ use log::{error, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::rides::Rides;
-use crate::{input::JsonResponse, stations::Stations, Record};
+use crate::input::{BikeId, StationId};
+use crate::rides::{RideEvent, RideLocation, Rides};
+use crate::{input::JsonResponse, stations::Stations};
 
 #[derive(Serialize, Deserialize, Debug)]
-struct CsvStation {
-    name: String,
-    lat: f32,
-    lng: f32,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Position {
-    lat: f32,
-    lng: f32,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Locatin {
+struct StateRecord {
+    station_uid: StationId,
     timestamp: u64,
-    name: String,
-    lat: f32,
-    lng: f32,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CsvRide {
-    bike_id: u32,
-
-    src: P,
-    dst: P,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct P {
-    timestamp: u64,
-    name: String,
-    lat: f32,
-    lng: f32,
 }
 
 pub struct RidesProcessor {
     stations: Stations,
-    state: HashMap<u32, Record>,
+    state: HashMap<BikeId, StateRecord>,
     rides: Rides,
     last_timestamp: u64,
 }
@@ -105,9 +75,9 @@ impl RidesProcessor {
                         let s = self.stations.stations.get(&rec.station_uid).unwrap();
 
                         self.rides
-                            .write(&CsvRide {
+                            .write(&RideEvent {
                                 bike_id: bike.number,
-                                src: P {
+                                src: RideLocation {
                                     timestamp: rec.timestamp,
                                     name: clean_name(
                                         &self.stations.stations.get(&rec.station_uid).unwrap().name,
@@ -115,7 +85,7 @@ impl RidesProcessor {
                                     lat: s.lat,
                                     lng: s.lng,
                                 },
-                                dst: P {
+                                dst: RideLocation {
                                     timestamp: timestamp as u64,
                                     name: clean_name(&place.name),
                                     lat: place.lat,
@@ -130,7 +100,7 @@ impl RidesProcessor {
 
                 self.state.insert(
                     bike.number,
-                    Record {
+                    StateRecord {
                         timestamp: timestamp as u64,
                         station_uid: place.uid,
                     },
