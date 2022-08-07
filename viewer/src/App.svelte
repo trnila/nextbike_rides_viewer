@@ -83,7 +83,13 @@
       }
 
       if(t.dst.timestamp > current && !active.find((el) => el.index == head)) {
+        const pad = s => ('00' + s).substr(-2);
+        const time = t => `${pad(t.getHours())}:${pad(t.getMinutes())}`;
+
+        const diff = parseInt((t.dst.timestamp - t.src.timestamp) / 1000 / 60);
+
         let marker = L.marker([t.src.lat, t.src.lng], {icon: icon}).addTo(M);
+        marker.bindPopup(`<strong>${t.bike_id}</strong><br>${time(t.src.timestamp)} - ${time(t.dst.timestamp)}<br>${diff} min`);
         var polyline = L.polyline([[t.src.lat, t.src.lng],[t.dst.lat, t.dst.lng]], {color: 'red'}).addTo(M);
 
         active.push({
