@@ -12,7 +12,7 @@ reqwest = { version = "0.11.11", features = ["blocking", "native-tls-vendored"] 
 regex = "1.6.0"
 env_logger = "0.9.0"
 log = "0.4.17"
-clap = {features = ["derive"]}
+clap = { version = "3.2.16", features = ["derive"] }
 indicatif = "0.17.0"
 lazy_static = "1.4.0"
 parking_lot = "0.12.1"
