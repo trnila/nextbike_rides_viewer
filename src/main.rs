@@ -10,14 +10,11 @@ use std::time::SystemTime;
 use clap::{Parser, Subcommand};
 
 use crate::input::JsonResponse;
-use crate::offline::load_from_disk;
 use crate::processor::RidesProcessor;
 use crate::rides::Rides;
 use crate::stations::Stations;
 
 mod input;
-mod logging;
-mod offline;
 mod processor;
 mod rides;
 mod stations;
@@ -87,14 +84,6 @@ struct Cli {
     )]
     stations_path: PathBuf,
 
-    #[clap(
-        short,
-        long,
-        help = "directory with input JSONs",
-        default_value = "./data/"
-    )]
-    input_dir: PathBuf,
-
     #[clap(subcommand)]
     command: Commands,
 }
@@ -105,12 +94,10 @@ enum Commands {
         #[clap(parse(try_from_str = parse_duration))]
         interval: std::time::Duration,
     },
-
-    Offline,
 }
 
 fn main() {
-    logging::Logger::init();
+    env_logger::init();
     let cli = Cli::parse();
 
     let stations = Stations::new(cli.stations_path);
@@ -124,9 +111,6 @@ fn main() {
                 scrap_data(&mut processor);
                 thread::sleep(interval);
             }
-        }
-        Commands::Offline => {
-            load_from_disk(&cli.input_dir, &cli.rides_path, stations);
         }
     }
 }

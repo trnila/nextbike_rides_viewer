@@ -42,10 +42,6 @@ impl Rides {
         }
     }
 
-    pub fn new_blank(path: &PathBuf) -> Self {
-        Self::new(path, false)
-    }
-
     pub fn new_appending(path: &PathBuf) -> Self {
         Self::new(path, true)
     }
