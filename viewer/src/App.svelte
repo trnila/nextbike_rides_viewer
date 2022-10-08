@@ -8,6 +8,7 @@
   let current;
   let active = [];
   let playing = false;
+  let sim_time_per_s = 60;
 
   let M;
 
@@ -86,7 +87,7 @@
         const pad = s => ('00' + s).substr(-2);
         const time = t => `${pad(t.getHours())}:${pad(t.getMinutes())}`;
 
-        const diff = parseInt((t.dst.timestamp - t.src.timestamp) / 1000 / 60);
+        const diff = parseInt((t.dst.timestamp - t.src.timestamp) / 1000 / sim_time_per_s);
 
         let marker = L.marker([t.src.lat, t.src.lng], {icon: icon}).addTo(M);
         marker.bindPopup(`<strong>${t.bike_id}</strong><br>${time(t.src.timestamp)} - ${time(t.dst.timestamp)}<br>${diff} min`);
@@ -112,7 +113,7 @@
     const diff = timestamp - last;
     last = timestamp;
 
-    current = new Date(current.getTime() + diff/1000 * 60*1000);
+    current = new Date(current.getTime() + diff/1000 * sim_time_per_s*1000);
     tick();
 
     for(const a of active) {
@@ -177,5 +178,6 @@
     <Icon icon="el:{playing ? 'pause' : 'play'}" />
   </button>
   <Datetime bind:value={current} on:click={() => start(false)} />
+  <input type="number" bind:value={sim_time_per_s}>
 </div>
 <div style="width: 100%; height: 100%;" use:map />
