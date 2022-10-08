@@ -1,9 +1,6 @@
 use log::{debug, error};
 
 use std::fmt::Display;
-use std::fs;
-
-use std::path::Path;
 use std::path::PathBuf;
 use std::thread;
 use std::time;
@@ -124,7 +121,7 @@ fn main() {
                 RidesProcessor::new(stations, Rides::new_appending(&cli.rides_path));
 
             loop {
-                scrap_data(&cli.input_dir, &mut processor);
+                scrap_data(&mut processor);
                 thread::sleep(interval);
             }
         }
@@ -134,7 +131,7 @@ fn main() {
     }
 }
 
-fn scrap_data(input_dir: &Path, processor: &mut RidesProcessor) {
+fn scrap_data(processor: &mut RidesProcessor) {
     let ts = SystemTime::now()
         .duration_since(time::UNIX_EPOCH)
         .unwrap()
@@ -144,12 +141,6 @@ fn scrap_data(input_dir: &Path, processor: &mut RidesProcessor) {
     match reqwest::blocking::get("https://api.nextbike.net/maps/nextbike-live.json?city=271") {
         Ok(resp) => match resp.text() {
             Ok(body) => {
-                let path = input_dir.join(format!("{ts}.json"));
-
-                if let Err(err) = fs::write(&path, &body) {
-                    error!("Failed to store response {path:?}: {err}");
-                }
-
                 match serde_json::from_str::<JsonResponse>(&body) {
                     Ok(json) => {
                         let rides = processor.process(ts, &json);
