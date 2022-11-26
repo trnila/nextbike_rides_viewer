@@ -12,6 +12,9 @@ reqwest = { version = "0.11.11", features = ["blocking", "native-tls-vendored"] 
 regex = "1.6.0"
 env_logger = "0.9.0"
 log = "0.4.17"
-clap = { version = "3.2.16", features = ["derive"] }
 lazy_static = "1.4.0"
 chrono = "0.4.20"
+byteorder = "1.4.3"
+actix-web = "4"
+actix-files = "0.6.2"
+memmap = "0.7.0"

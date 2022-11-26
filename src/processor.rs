@@ -8,7 +8,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::input::{BikeId, StationId};
-use crate::rides::{RideEvent, RideLocation, Rides};
+use crate::rides::{RideEvent, RideLocation, RidesWriter};
 use crate::{input::JsonResponse, stations::Stations};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -20,12 +20,12 @@ struct StateRecord {
 pub struct RidesProcessor {
     stations: Stations,
     state: HashMap<BikeId, StateRecord>,
-    rides: Rides,
+    rides: RidesWriter,
     last_timestamp: u64,
 }
 
 impl RidesProcessor {
-    pub fn new(stations: Stations, rides: Rides) -> Self {
+    pub fn new(stations: Stations, rides: RidesWriter) -> Self {
         RidesProcessor {
             stations,
             rides,
@@ -62,44 +62,39 @@ impl RidesProcessor {
         }
 
         let mut rides = 0u64;
-        for place in &json.countries[0].cities[0].places {
-            if place.name.starts_with("BIKE") {
+        for cur in &json.countries[0].cities[0].places {
+            if cur.name.starts_with("BIKE") {
                 continue;
             }
 
             self.stations
-                .add_station(place.uid, &place.name, place.lat, place.lng);
+                .add_station(cur.uid, &cur.name, cur.lat, cur.lng);
 
-            for bike in &place.bike_list {
-                if let Some(rec) = self.state.get(&bike.number) {
-                    if rec.station_uid != place.uid {
-                        let s = self.stations.stations.get(&rec.station_uid).unwrap();
-
-                        let src_name =
-                            clean_name(&self.stations.stations.get(&rec.station_uid).unwrap().name);
-                        let dst_name = clean_name(&place.name);
+            for bike in &cur.bike_list {
+                if let Some(prev) = self.state.get(&bike.number) {
+                    if prev.station_uid != cur.uid {
+                        let src_name = clean_name(
+                            &self.stations.stations.get(&prev.station_uid).unwrap().name,
+                        );
+                        let dst_name = clean_name(&cur.name);
 
                         info!(
                             "{} Bike {} moved from {src_name} to {dst_name} in {} minutes",
-                            NaiveDateTime::from_timestamp(rec.timestamp as i64, 0),
+                            NaiveDateTime::from_timestamp(prev.timestamp as i64, 0),
                             bike.number,
-                            (timestamp - rec.timestamp) / 60
+                            (timestamp - prev.timestamp) / 60
                         );
 
                         self.rides
                             .write(&RideEvent {
                                 bike_id: bike.number,
                                 src: RideLocation {
-                                    timestamp: rec.timestamp,
-                                    name: src_name,
-                                    lat: s.lat,
-                                    lng: s.lng,
+                                    timestamp: prev.timestamp,
+                                    station_id: prev.station_uid,
                                 },
                                 dst: RideLocation {
                                     timestamp,
-                                    name: dst_name,
-                                    lat: place.lat,
-                                    lng: place.lng,
+                                    station_id: cur.uid,
                                 },
                             })
                             .unwrap();
@@ -112,7 +107,7 @@ impl RidesProcessor {
                     bike.number,
                     StateRecord {
                         timestamp: timestamp as u64,
-                        station_uid: place.uid,
+                        station_uid: cur.uid,
                     },
                 );
             }
