@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build_parser:
+  build_nextbike_server:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,10 +21,10 @@ jobs:
     - run: cargo build --release --target aarch64-unknown-linux-gnu --verbose
     - uses: actions/upload-artifact@v3
       with:
-        name: parser
+        name: nextbike_server
         path: target/aarch64-unknown-linux-gnu/release/nextbike
     
-  build_frontend:
+  build_viewer:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,15 +40,16 @@ jobs:
     - run: npm run build
     - uses: actions/upload-artifact@v3
       with:
-        name: frontend
+        name: viewer
         path: viewer/dist/
         
   deploy:
     runs-on: ubuntu-latest
     needs:
-     - build_parser
-     - build_frontend
+     - build_nextbike_server
+     - build_viewer
     steps:
       - uses: actions/download-artifact@v3
-      - run: 'tar -cfJ viewer.tar.xz index.html assets'
-      - run: 'curl --fail -s -H"Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" -F nextbike=@nextbike -F viewer.tar.xz=@viewer.tar.xz https://trnila.eu/hooks/nextbike'
+      - run: find
+      - run: 'tar -cfJ viewer.tar.xz viewer'
+      - run: 'curl --fail -s -H"Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" -F nextbike_server=@nextbike_server/nextbike -F viewer.tar.xz=@viewer.tar.xz https://trnila.eu/hooks/nextbike'
