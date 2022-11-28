@@ -1,6 +1,7 @@
 name: build
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "master" ]
     tags: '*'
@@ -48,22 +49,6 @@ jobs:
      - build_parser
      - build_frontend
     steps:
-      - run: 'curl --fail -s -H"Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" https://trnila.eu/hooks/nextbike_deploy'
-  
-  release:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-
-    needs:
-     - build_parser
-     - build_frontend
-    
-    steps:
-    - uses: actions/download-artifact@v3
-    - run: find
-    - uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          nextbike
-          index.html
-          assets/*
+      - uses: actions/download-artifact@v3
+      - run: 'tar -cfJ viewer.tar.xz index.html assets'
+      - run: 'curl --fail -s -H"Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" -F nextbike=@nextbike -F viewer.tar.xz=@viewer.tar.xz https://trnila.eu/hooks/nextbike'
