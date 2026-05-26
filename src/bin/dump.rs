@@ -23,8 +23,8 @@ fn parse_from_timestamp(input: &str) -> Result<u64, String> {
     let datetime_formats = ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"];
 
     for fmt in datetime_formats {
-        if let Ok(dt) = Local.datetime_from_str(input, fmt) {
-            return Ok(dt.timestamp() as u64);
+        if let Ok(dt) = chrono::NaiveDateTime::parse_from_str(input, fmt) {
+            return Ok(dt.and_utc().timestamp() as u64);
         }
 
         if fmt == "%Y-%m-%d" {

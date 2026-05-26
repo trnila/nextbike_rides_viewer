@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use chrono::NaiveDateTime;
 use lazy_static::lazy_static;
 use log::{error, info, warn};
 use regex::Regex;
@@ -80,7 +79,7 @@ impl RidesProcessor {
 
                         info!(
                             "{} Bike {} moved from {src_name} to {dst_name} in {} minutes",
-                            NaiveDateTime::from_timestamp(prev.timestamp as i64, 0),
+                            chrono::DateTime::from_timestamp(prev.timestamp as i64, 0).unwrap(),
                             bike.number,
                             (timestamp - prev.timestamp) / 60
                         );
