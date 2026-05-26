@@ -45,6 +45,7 @@ impl Stations {
 
                 let w = OpenOptions::new()
                     .create(true)
+                    .truncate(true)
                     .write(true)
                     .open(&self.path)
                     .unwrap();

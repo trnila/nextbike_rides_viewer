@@ -61,7 +61,7 @@ pub struct RidesReader {
 impl RidesWriter {
     pub fn new(path: PathBuf) -> Self {
         let f = OpenOptions::new()
-            .write(true)
+            
             .create(true)
             .append(true)
             .open(path.clone())
@@ -142,7 +142,7 @@ where
         size = right - left;
     }
 
-    return pos;
+    pos
 }
 
 impl RidesReader {

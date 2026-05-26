@@ -106,7 +106,7 @@ impl RidesProcessor {
                 self.state.insert(
                     bike.number,
                     StateRecord {
-                        timestamp: timestamp as u64,
+                        timestamp,
                         station_uid: cur.uid,
                     },
                 );
@@ -121,5 +121,5 @@ fn clean_name(name: &str) -> String {
         static ref RE: Regex = Regex::new(r"\*?\(.+").unwrap();
     }
 
-    return RE.replace(name, "").to_string().trim().to_string();
+    RE.replace(name, "").to_string().trim().to_string()
 }
