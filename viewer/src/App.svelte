@@ -87,7 +87,8 @@
             return null;
           }
         })
-        .filter((record) => record),
+        .filter((record) => record)
+        .sort((a, b) => a.src.timestamp - b.src.timestamp),
     ];
 
     last_event_id = json.last_event_id;
