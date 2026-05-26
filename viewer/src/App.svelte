@@ -190,13 +190,21 @@
     tick();
 
     for (const a of active) {
-      const b = events[a.index];
-      const t = b.dst.timestamp - current;
+      const evt = events[a.index];
+      const startMs = evt.src.timestamp.getTime();
+      const endMs = evt.dst.timestamp.getTime();
+      const currentMs = current.getTime();
+      const totalMs = endMs - startMs;
 
-      let pos = a.marker.getLatLng();
-      pos.lat += ((b.dst.lat - pos.lat) / t) * 1000;
-      pos.lng += ((b.dst.lng - pos.lng) / t) * 1000;
-      a.marker.setLatLng(pos);
+      if (totalMs <= 0) {
+        a.marker.setLatLng([evt.dst.lat, evt.dst.lng]);
+        continue;
+      }
+
+      const progress = Math.min(1, Math.max(0, (currentMs - startMs) / totalMs));
+      const lat = evt.src.lat + (evt.dst.lat - evt.src.lat) * progress;
+      const lng = evt.src.lng + (evt.dst.lng - evt.src.lng) * progress;
+      a.marker.setLatLng([lat, lng]);
     }
 
     if (playing) {
