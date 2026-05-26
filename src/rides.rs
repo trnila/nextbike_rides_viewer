@@ -37,6 +37,20 @@ pub struct RidesFilter {
     limit: Option<usize>,
 }
 
+impl RidesFilter {
+    pub fn new(from: Option<u64>, last_event_id: Option<usize>, limit: Option<usize>) -> Self {
+        RidesFilter {
+            from,
+            last_event_id,
+            limit,
+        }
+    }
+
+    pub fn all() -> Self {
+        RidesFilter::new(None, None, Some(usize::MAX))
+    }
+}
+
 pub struct RidesReader {
     filter: RidesFilter,
     mmap: memmap::Mmap,

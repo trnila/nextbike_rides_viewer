@@ -6,19 +6,13 @@ use std::time;
 use std::time::Duration;
 use std::time::SystemTime;
 
-use crate::input::JsonResponse;
-use crate::processor::RidesProcessor;
-use crate::rides::RidesWriter;
-use crate::stations::Stations;
 use actix_web::{middleware::Logger, App};
+use nextbike::input::JsonResponse;
+use nextbike::processor::RidesProcessor;
+use nextbike::rides::RidesWriter;
+use nextbike::stations::Stations;
 
 use actix_web::HttpServer;
-
-mod api;
-mod input;
-mod processor;
-mod rides;
-mod stations;
 
 fn start_scrapper(interval: Duration) {
     thread::spawn(move || {
@@ -63,8 +57,8 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
-            .service(api::rides)
-            .service(api::stations)
+            .service(nextbike::api::rides)
+            .service(nextbike::api::stations)
             .wrap(Logger::new("%U %s %D"))
     })
     .bind(("127.0.0.1", 8080))?
