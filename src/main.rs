@@ -1,3 +1,6 @@
+use actix_web::get;
+use actix_web::HttpResponse;
+use actix_web::Responder;
 use log::{error, info};
 
 use std::path::PathBuf;
@@ -49,6 +52,15 @@ fn scrap_data(processor: &mut RidesProcessor) {
     }
 }
 
+static INDEX_HTML: &str = include_str!("../viewer/dist/index.html");
+
+#[get("/")]
+async fn index() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("text/html; charset=utf-8")
+        .body(INDEX_HTML)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -57,6 +69,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
+            .service(index)
             .service(nextbike::api::rides)
             .service(nextbike::api::stations)
             .wrap(Logger::new("%U %s %D"))
