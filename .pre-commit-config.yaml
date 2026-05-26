@@ -10,3 +10,10 @@ repos:
     - id: fmt
     - id: cargo-check
     - id: clippy
+  - repo: local
+    hooks:
+    - id: treefmt
+      name: treefmt
+      entry: nixfmt --
+      language: system
+      files: \.nix$
