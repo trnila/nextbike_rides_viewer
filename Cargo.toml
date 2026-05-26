@@ -7,16 +7,16 @@ default-run = "nextbike"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde_json = "1.0.82"
+serde_json = "1.0.150"
 serde = { version = "1.0", features = ["derive"] }
 clap = { version = "4.6", features = ["derive"] }
 reqwest = { version = "0.13.4", features = ["blocking" ] }
-regex = "1.6.0"
-env_logger = "0.9.0"
-log = "0.4.17"
-lazy_static = "1.4.0"
-chrono = "0.4.20"
-byteorder = "1.4.3"
+regex = "1.12.3"
+env_logger = "0.9.3"
+log = "0.4.30"
+lazy_static = "1.5.0"
+chrono = "0.4.44"
+byteorder = "1.5.0"
 actix-web = "4"
-actix-files = "0.6.2"
+actix-files = "0.6.10"
 memmap = "0.7.0"
