@@ -1,14 +1,39 @@
 <script>
   import L from "leaflet";
+  import { onMount } from "svelte";
   import Datetime from "./Datetime.svelte";
   import Icon from "@iconify/svelte";
 
+  function parseStartTimeFromHash() {
+    const value = window.location.hash.slice(1).trim();
+    if (!value) {
+      return null;
+    }
+
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+    return null;
+  }
+
   function getStartTime() {
+    const fromHash = parseStartTimeFromHash();
+    if (fromHash) {
+      return fromHash;
+    }
+
     let time = new Date();
     //time.setHours(time.getHours() - 24);
     time.setDate(time.getDate() - 10);
     time.setHours(10);
     return time;
+  }
+
+  function formatHashDate(date) {
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
   }
 
   let events = [];
@@ -185,6 +210,29 @@
 
     if (playing) {
       window.requestAnimationFrame(move);
+    }
+  }
+
+  onMount(() => {
+    function handleHashChange() {
+      const fromHash = parseStartTimeFromHash();
+      if (!fromHash || fromHash.getTime() === current.getTime()) {
+        return;
+      }
+
+      current = fromHash;
+      start(true);
+      tick();
+    }
+
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  });
+
+  $: if (current) {
+    const value = formatHashDate(current);
+    if (window.location.hash !== `#${value}`) {
+      history.replaceState(null, "", `#${value}`);
     }
   }
 </script>
