@@ -183,12 +183,14 @@ impl Iterator for RidesReader {
         }
 
         loop {
-            self.pos += RECORD_SIZE;
             if self.pos >= self.mmap.len() {
                 return None;
             }
 
-            match decode_ride(Cursor::new(&self.mmap[self.pos..self.pos + RECORD_SIZE])) {
+            let current = Cursor::new(&self.mmap[self.pos..self.pos + RECORD_SIZE]);
+            self.pos += RECORD_SIZE;
+
+            match decode_ride(current) {
                 Err(_err) => return None,
                 Ok(ride) => {
                     let event_id = self.pos / RECORD_SIZE - 1;
