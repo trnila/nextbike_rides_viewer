@@ -45,14 +45,3 @@ jobs:
       with:
         name: viewer
         path: viewer/dist/
-        
-  deploy:
-    runs-on: ubuntu-latest
-    needs:
-     - build_nextbike_server
-     - build_viewer
-    steps:
-      - uses: actions/download-artifact@v3
-      - run: find
-      - run: 'tar -cJf viewer.tar.xz viewer'
-      - run: 'curl --fail -s -H"Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" -F nextbike_server=@nextbike_server/nextbike -F viewer.tar.xz=@viewer.tar.xz https://trnila.eu/hooks/nextbike'
