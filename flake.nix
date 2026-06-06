@@ -111,7 +111,7 @@
             ];
 
             shellHook = ''
-              alias up="mprocs 'watchexec --restart --exts rs cargo run' 'cd viewer && npm ci && npm run dev';";
+              alias up="mprocs 'mkdir viewer/dist; touch viewer/dist/index.html; watchexec --restart --exts rs cargo run' 'cd viewer && npm ci && npm run dev';";
             '';
           };
         }
